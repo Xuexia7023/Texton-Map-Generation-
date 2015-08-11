@@ -1,0 +1,6 @@
+cmake_minimum_required (VERSION 2.8)
+project(textonMap)
+find_package(OpenCV REQUIRED)
+include_directories(include)
+add_executable( textonMap TextonMapGeneration.cpp src/filters.cpp)
+target_link_libraries(textonMap ${OpenCV_LIBS} )
