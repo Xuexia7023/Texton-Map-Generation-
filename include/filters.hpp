@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstdio>
+#include <ctime>
 #include <limits>
 #include <vector>
 #include <opencv2/opencv.hpp>
@@ -23,12 +24,12 @@ typedef struct feature {
 }pixelFeatures;
 
 typedef struct {
-    float Filters[8];
+    float Filters[18];
 }FilterResponses;
 class Textons {
     public:
         int k;
-        static const int NumFilters = 8;
+        static const int NumFilters = 18;
         vector<FilterResponses> TrainFilterResponses;
         vector<FilterResponses> Dictionary;
         vector<FilterResponses> TestImageTextonMap;
@@ -38,10 +39,12 @@ class Textons {
         Mat TextonMap;
 
         void createFilterBank(InputArray input_image_, int FlagTrainTest);
-        void pushToDictionary(Mat DoG[], Mat DDoG[], Mat G, Mat LoG);
-        void pushToImageTextons(Mat DoG[], Mat DDoG[], Mat G, Mat LoG);
+        void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
+        //void pushToDictionary(Mat G[], Mat LoG[]);
+        void pushToImageTextons(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
+        //void pushToImageTextons(Mat G[], Mat LoG[]);
         void computeKmeans();
-        void generateTextonMap(InputArray input_image_);
+        Mat generateTextonMap(InputArray input_image_);
         void writeTextonMapToFile();
         
         Textons(int DictionarySize);
