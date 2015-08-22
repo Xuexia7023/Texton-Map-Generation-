@@ -21,10 +21,16 @@ void rotate(Mat &src, double angle, Mat &dst) {
     warpAffine(src, dst, r, Size(len, len));
 }
 */
+void magnitude(int rot[][2]) {
+    return;
+}
 int main(int argc, char* argv[]) {
     int k = atoi(argv[1]);
     int numTrainingImages = atoi(argv[2]);
     Textons textonMap(k);
+    int rot[2][2] = {1, 2, 3, 4};
+
+
 
 /*
     Mat img(3,3, CV_32F);
@@ -51,7 +57,7 @@ return 0;
 }*/
 
 
-
+/*
     int iter = 1;
     while (iter <= numTrainingImages) {
         char fname[100];
@@ -121,7 +127,7 @@ return 0;
         tm << endl;
     }
   tm.close();  
-
+*/
 /*
     
     Mat exp1 = imread("tm1.jpg");
@@ -155,5 +161,11 @@ return 0;
     imshow("difference", difference);
     waitKey();
 */
+    //Mat F[36];
+
+    Mat input_image_ = imread("street_image.jpg");
+    resize(input_image_, input_image_, Size(0,0), 0.25, 0.25);
+    textonMap.makeRFSFilters();
+    textonMap.createFilterResponses(input_image_, 0);
     return 0;
 }

@@ -24,12 +24,13 @@ typedef struct feature {
 }pixelFeatures;
 
 typedef struct {
-    float Filters[18];
+    float Filters[42];
 }FilterResponses;
 class Textons {
     public:
         int k;
-        static const int NumFilters = 18;
+        static const int NumFilters = 42;
+        static const int SUP = 9;
         vector<FilterResponses> TrainFilterResponses;
         vector<FilterResponses> Dictionary;
         vector<FilterResponses> TestImageTextonMap;
@@ -37,8 +38,10 @@ class Textons {
         Mat FilterResponsesKmeans;//(1,1, CV_32F, Scalar(0));
         Mat centers;
         Mat TextonMap;
+        Mat F[36];
 
-        void createFilterBank(InputArray input_image_, int FlagTrainTest);
+        void makeRFSFilters();
+        void createFilterResponses(InputArray input_image_, int FlagTrainTest);
         void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
         //void pushToDictionary(Mat G[], Mat LoG[]);
         void pushToImageTextons(Mat DoG_DDoG[], Mat G[], Mat LoG[]);

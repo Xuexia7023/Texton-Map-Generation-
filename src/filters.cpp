@@ -42,14 +42,157 @@ string type2str(int type) {
     r += (chans+'0');
     return r;
 }
+void gauss1d(double *g, int size, int scale, float *pts, int order) {
+
+    float sqrPts[size];
+    int variance  = scale*scale;
+    float denom = 2*variance;
+    for (int i = 0; i < size; i++) {
+        sqrPts[i] = pts[i]*pts[i];
+        g[i] = exp(-1*sqrPts[i]/denom);
+        g[i] /= sqrt(PI*denom);
+
+        switch (order) {
+            case 1: 
+                g[i] = -1*g[i]*pts[i]/variance;
+                break;
+            case 2:
+                g[i] = g[i]*(sqrPts[i]-variance)/(variance*variance);
+                break;
+        }
+        g[i] = (int)(g[i]*10000);
+        g[i] = (float)g[i]/10000;
+    }
+    return;
+}
+
+void normalise(Mat *F, double *gx, double *gy, int sup) {
+
+    float sum = 0, absSum = 0;
+    ofstream Ffile;
+    Ffile.open("f.txt", ios::app);
+    for (int i = 0; i < sup; i++) {
+        for (int j = 0; j < sup; j++) {
+            double temp = double(gx[i*sup+j]*gy[i*sup+j]);
+            temp = (int)(temp*10000);
+            temp = temp/10000;
+            F->at<float>(j,i) = temp;
+            sum += temp;
+            absSum += abs(temp);
+        }
+    }
+
+    float mean = sum/(sup*sup);
+    for (int i = 0; i < sup; i++) {
+        for (int j = 0; j < sup; j++) {
+            F->at<float>(i,j) -= mean;
+            F->at<float>(i,j) /= absSum;
+            F->at<float>(i,j) = (int)(F->at<float>(i,j)*100000);
+            F->at<float>(i,j) /= 100000; //(F->at<float>(i,j)/1000);
+
+            Ffile << F->at<float>(i,j) << ", ";
+
+        }
+        Ffile << endl;
+    }
+
+    Ffile << "--------------------" << endl;
+
+    Ffile.close();
+    return;
+}
+void makeFilter(Mat *F, int scale, int phasex, int phasey, float rotPtsx[], float rotPtsy[], int sup) {
+    double gx[sup*sup];
+    double gy[sup*sup];
+    gauss1d(gx, sup*sup, 3*scale, rotPtsx, phasex);
+    gauss1d(gy, sup*sup, scale, rotPtsy, phasey);
+
+    normalise(F, gx, gy, sup);
+    return;
+} 
+void Textons::makeRFSFilters() {
+
+    //int SUP = 9; // Support of the largest filter
+    int NSCALES = 3; //Number of Scales
+    int SCALEX[3] = {1, 2, 4}; // Sigma_{x} for the oriented filters
+    int NORIENT = 6; // Number of orientatioons 
+
+    int NROTINV = 2*3;
+    int NBAR = NSCALES*NORIENT;
+    int NEDGE = NSCALES*NORIENT;
+
+    int NF = NBAR+NEDGE;
+    
+    //Mat F[42]; // NF
+    for (int i = 0; i < NF; i++) {
+        F[i].create(SUP, SUP, CV_32FC1);
+    }
+
+    int hsup = (SUP - 1)/2;
+    float x[SUP*SUP], y[SUP*SUP];
+    ofstream pts;
+    pts.open("pts.txt");
+
+    for (int i = 0; i < SUP; i++) {
+        for (int j = 0; j < SUP; j++) {
+            x[i*SUP + j] = -1*hsup + i;
+            y[j*SUP + i] = hsup - i; 
+        }
+    }
+
+    int count = 0;
+    for (int scale = 0; scale < NSCALES; scale++) {
+        for (int orient = 0; orient < NORIENT; orient++) {
+            float angle = PI*orient/NORIENT; 
+            float c = cos(angle);
+            float s = sin(angle);
+
+            // Calculate rotated points
+            float rotPtsx[SUP*SUP];
+            float rotPtsy[SUP*SUP];
+            for (int i = 0; i < SUP; i++) {
+                for (int j = 0; j < SUP; j++) {
+                    float x_prime = x[i*SUP+j];
+                    float y_prime = y[i*SUP+j];
+                    rotPtsx[i*SUP+j] = (int)((x_prime*c - y_prime*s)*1000);
+                    rotPtsy[i*SUP+j] = (int)((x_prime*s + y_prime*c)*1000);
+                    rotPtsx[i*SUP+j] /= 1000;
+                    rotPtsy[i*SUP+j] /= 1000;
+                    pts << rotPtsx[i*SUP+j] << ", ";
+                    pts << rotPtsy[i*SUP+j] << ", ";
+                    pts << endl;
+                }
+            }
+            pts << endl << "---------------- " << endl;
+            makeFilter(&F[count], SCALEX[scale], 0, 1, rotPtsx, rotPtsy, SUP);
+            makeFilter(&F[count + NEDGE], SCALEX[scale], 0, 2, rotPtsx, rotPtsy, SUP);
+            count++;
+        }
+    }
+
+for (int k = 0; k < NF; k++) {
+    for (int i = 0; i < SUP; i++) {
+        for (int j = 0; j < SUP; j++) {
+  /*        pts << rotPts[i*SUP + j][0] << ", ";
+            pts << rotPts[i*SUP + j][1]; // = -1*hsup + i; 
+            pts << endl;
+    */
+            pts << F[k].at<float>(i,j) << ", ";
+        }
+        pts << endl;
+    }
+    pts << endl << "---------------------------------------------" << endl;
+}
+
+    pts.close();
+
+    return;
+}
  
-void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
+void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) {
     FilterResponses temp;
-    int num_orientations = 2;
-    int scalesX[3] = {1,2,4};
-    int scalesY[3] = {3,6,12};
-    int scalesGL[3] = {5, 10, 15};
     Mat grey_image_, input_image, grey_image;
+    float scales[3] = {sqrt(2), sqrt(8), sqrt(32)};
     //resize(input_image_, input_image, Size(0,0), 0.25, 0.25);
     cvtColor(input_image_, grey_image, CV_BGR2GRAY);
     grey_image_.create(input_image_.rows(), input_image_.cols(), CV_32F);
@@ -63,19 +206,35 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
         }
         greyImageFile << endl;
     }
+    Mat FilterResponses[42];
+    for (int i = 0; i < 36; i++) {
+        filter2D(grey_image_, FilterResponses[i], -1, F[i], Point(-1,-1),
+             0, BORDER_DEFAULT);   
+        imshow("filterResponses" , FilterResponses[i]);
+        waitKey();
+    }
+    for (int i = 0; i < 3; i++) {
+        GaussianBlur(grey_image, FilterResponses[i+36], Size(SUP, SUP), scales[i], 0, BORDER_DEFAULT); 
+        imshow("filterResponsesG", FilterResponses[i+36]);
+        waitKey();
+        Laplacian(FilterResponses[i+36], FilterResponses[i+36+3], -1,
+                SUP, scales[i], 0, BORDER_DEFAULT); 
+        imshow("filterResponsesLoG", FilterResponses[i+36+3]);
+        waitKey();
+    }
     //normalize the input image
     //normalize(grey_image_, grey_image_);
-
+/*
     int num_rotInvariants = 2;
     Mat DoG[3];
     Mat DDoG[3];
     Mat G[3], LoG[3];
 
-    Mat DoG_temp[3][2];
-    Mat DDoG_temp[3][2];
-    Mat DoG_DDoG[12];
+    Mat DoG_temp[3][6];
+    Mat DDoG_temp[3][6];
+    Mat DoG_DDoG[36];
 
-    double angles[2] = {0,PI/2};
+    double angles[6] = {0, PI/6, PI/3, PI/2, 2*PI/3, 5*PI/6};
 
     //G.create(grey_image_.rows, grey_image_.cols, CV_32F);
     //LoG.create(grey_image_.rows, grey_image_.cols, CV_32F);
@@ -105,7 +264,6 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
 
         //Second derivative of Gaussian
         Sobel(gaussian_image_dx, gaussian_image_ddx, -1, 1, 0, 5);
-        Sobel(gaussian_image_dy, gaussian_image_ddxy, -1, 1, 0, 5);
         Sobel(gaussian_image_dy, gaussian_image_ddy, -1, 0, 1, 5);
 
         ofstream sobelFiles;
@@ -127,35 +285,30 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
             double angle = angles[i];
             //double angle = (j+1)*PI/7;
             //DoG_temp[j] = cos(angle)*gaussian_image_dx + sin(angle)*gaussian_image_dy;
-            Mat tempx, tempy, tempxx,tempyy, tempxy;
+            Mat tempx, tempy, tempxx, tempyy;
             gaussian_image_dx.copyTo(tempx);
             gaussian_image_dy.copyTo(tempy);
 
             gaussian_image_ddx.copyTo(tempxx);
             gaussian_image_ddy.copyTo(tempyy);
-            gaussian_image_ddxy.copyTo(tempxy);
             
-            tempx *= (float)cos(angle);
-            tempx.convertTo(tempx, CV_32F);
-            pow(tempx, 2, tempx);
-            tempy *= (float)sin(angle);
-            tempy.convertTo(tempy, CV_32F);
-            pow(tempy, 2, tempy);
+            Mat tanInv_d, tanInv_dd;
+            tempy /= tempx;
+            tempy.copyTo(tanInv_d);
 
-            tempxx += tempxy;
-            tempyy += tempxy;
+            tempyy /= tempxx;
+            tempyy.copyTo(tanInv_dd);
 
-            tempxx *= (float)cos(angle);
-            tempxx.convertTo(tempxx, CV_32F);
-            pow(tempxx, 2, tempxx);
-            tempyy *= (float)sin(angle);
-            tempyy.convertTo(tempyy, CV_32F);
-            pow(tempyy, 2, tempyy);
-
-            DoG_temp[i][j] = tempx + tempy;
-            sqrt(DoG_temp[i][j], DoG_temp[i][j]);
-            DDoG_temp[i][j] = tempxx + tempyy;
-            sqrt(DDoG_temp[i][j], DDoG_temp[i][j]);
+            for (int r = 0; r < tanInv_d.rows; r++) {
+                for (int c = 0; c < tanInv_d.cols; c++) {
+                    tanInv_d.at<float>(r,c) = atan(tanInv_d.at<float>(r,c)) + (PI/2) - angles[j];
+                    tanInv_dd.at<float>(r,c) = atan(tanInv_dd.at<float>(r,c)) + (PI/2) - angles[j];
+                }
+            }
+            DoG_temp[i][j] = tanInv_d;
+            //sqrt(DoG_temp[i][j], DoG_temp[i][j]);
+            DDoG_temp[i][j] = tanInv_dd;
+            //sqrt(DDoG_temp[i][j], DDoG_temp[i][j]);
 
 
             DoG_temp[i][j].copyTo(DoG_DDoG[i*num_orientations+j]);
@@ -194,10 +347,10 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
 
             for (int i = 0; i < 6; i++) {
                int max_index = 0; 
-               int temp = DoG_DDoG[i*num_orientations +0].at<float>(r,c);
+               int temp = abs(DoG_DDoG[i*num_orientations +0].at<float>(r,c));
                for (int j = 1; j < num_orientations; j++) {
-                   if(temp < DoG_DDoG[i*num_orientations+j].at<float>(r,c)){
-                       temp = DoG_DDoG[i*num_orientations+j].at<float>(r,c);
+                   if(temp > abs(DoG_DDoG[i*num_orientations+j].at<float>(r,c))){
+                       temp = abs(DoG_DDoG[i*num_orientations+j].at<float>(r,c));
                        max_index = j;
                    }
                }
@@ -208,7 +361,7 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
                    iter++;
                }
                max_label[i] = max_index;
-               values[i] = DoG_DDoG[i*num_orientations + max_index].at<float>(r,c);
+               values[i] = abs(DoG_DDoG[i*num_orientations + max_index].at<float>(r,c));
                for (int j = 0; j < max_index; j++) {
                    //indices[i][iter] = DoG_DDoG[i][j].at<uchar>(r,c);
                    indices[i][iter] = j;
@@ -233,7 +386,7 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
             for (int i = 0; i < 6; i++) {
                 int temp[num_orientations];
                 for (int j = 0; j < num_orientations; j++) {
-                    temp[j] = DoG_DDoG[i*num_orientations+indices_final[j]].at<float>(r,c);
+                    temp[j] = abs(DoG_DDoG[i*num_orientations+indices_final[j]].at<float>(r,c));
                 }
                 for (int j = 0; j < num_orientations; j++) {
                     DoG_DDoG[i*num_orientations+j].at<float>(r,c) = temp[j];
@@ -271,7 +424,7 @@ void Textons::createFilterBank(InputArray input_image_, int FlagTrainTest) {
         Textons::pushToDictionary(DoG_DDoG, G, LoG);
     else
         Textons::pushToImageTextons(DoG_DDoG, G, LoG);
-    
+  */  
     return; 
 }
 
