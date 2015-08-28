@@ -29,8 +29,18 @@ typedef struct {
 class Textons {
     public:
         int k;
-        static const int NumFilters = 42;
-        static const int SUP = 9;
+
+        static const int SUP = 5;
+        static const int NSCALES = 3; //Number of Scales
+       // const int SCALEX[3] = {1, 2, 4}; // Sigma_{x} for the oriented filters
+        static const int NORIENT = 6; // Number of orientatioons 
+             
+        static const int NROTINV = 2*3;
+        static const int NBAR = NSCALES*NORIENT;
+        static const int NEDGE = NSCALES*NORIENT;
+             
+        static const int NumFilters = NROTINV + NBAR + NEDGE;
+        static const int NF = NBAR+NEDGE;
         vector<FilterResponses> TrainFilterResponses;
         vector<FilterResponses> Dictionary;
         vector<FilterResponses> TestImageTextonMap;
@@ -38,14 +48,14 @@ class Textons {
         Mat FilterResponsesKmeans;//(1,1, CV_32F, Scalar(0));
         Mat centers;
         Mat TextonMap;
-        Mat F[36];
+        Mat F[NF]; //kernels
 
         void makeRFSFilters();
         void createFilterResponses(InputArray input_image_, int FlagTrainTest);
-        void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
-        //void pushToDictionary(Mat G[], Mat LoG[]);
-        void pushToImageTextons(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
-        //void pushToImageTextons(Mat G[], Mat LoG[]);
+        //void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
+        void pushToDictionary(Mat FilterResponses[]);
+        //void pushToImageTextons(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
+        void pushToImageTextons(Mat FilterResponses[]);
         void computeKmeans();
         Mat generateTextonMap(InputArray input_image_);
         void writeTextonMapToFile();

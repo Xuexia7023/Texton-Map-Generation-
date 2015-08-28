@@ -57,27 +57,30 @@ return 0;
 }*/
 
 
-/*
+
+    textonMap.makeRFSFilters();
     int iter = 1;
     while (iter <= numTrainingImages) {
         char fname[100];
         sprintf(fname, "example_roads/img%d.jpg", iter);
         Mat input_image_ = imread(fname);
         resize(input_image_, input_image_, Size(0,0), 0.125,0.125);
+        //resize(input_image_, input_image_, Size(0,0), 0.00625,0.00625);
         clock_t start1 = clock();
-        textonMap.createFilterBank(input_image_, 1);
+        textonMap.createFilterResponses(input_image_, 1);
         clock_t end1 = clock();
-        cout << (end1 - start1)/(double)CLOCKS_PER_SEC << endl;
+     //   cout << (end1 - start1)/(double)CLOCKS_PER_SEC << endl;
         iter++;
     }
     
-    cout << "before Kmeans" << endl;
+    //cout << "before Kmeans" << endl;
     textonMap.computeKmeans();
-    cout << "after Kmeans" << endl;
+    //cout << "after Kmeans" << endl;
 
     Mat test_image_ = imread("street_image.jpg");
     resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
-    textonMap.createFilterBank(test_image_, 0);
+    //resize(test_image_, test_image_, Size(0,0), 0.00625,0.00625);
+    textonMap.createFilterResponses(test_image_, 0);
     Mat textonMap1 = textonMap.generateTextonMap(test_image_);
 
     
@@ -85,7 +88,7 @@ return 0;
     Mat test_image2_;
     flip(test_image_, test_image2_, -1);
 //    resize(test_image2_, test_image2_, Size(0,0), 0.00625, 0.00625);
-    textonMap.createFilterBank(test_image2_, 0);
+    textonMap.createFilterResponses(test_image2_, 0);
     Mat textonMap2 = textonMap.generateTextonMap(test_image2_);
 //    Mat difference  = textonMap1 - textonMap2;
 //    rotate(textonMap2, 180, textonMap2);
@@ -127,7 +130,9 @@ return 0;
         tm << endl;
     }
   tm.close();  
-*/
+  imshow("diff", diff);
+  waitKey();
+
 /*
     
     Mat exp1 = imread("tm1.jpg");
@@ -162,10 +167,18 @@ return 0;
     waitKey();
 */
     //Mat F[36];
-
+/*
     Mat input_image_ = imread("street_image.jpg");
-    resize(input_image_, input_image_, Size(0,0), 0.25, 0.25);
+    //resize(input_image_, input_image_, Size(0,0), 0.0625, 0.0625);
+    resize(input_image_, input_image_, Size(0,0), 0.5, 0.5);
     textonMap.makeRFSFilters();
+    textonMap.createFilterResponses(input_image_, 1);
+    textonMap.computeKmeans();
+
     textonMap.createFilterResponses(input_image_, 0);
+    Mat textonMap1 = textonMap.generateTextonMap(input_image_);
+    imshow("textonmap", textonMap1);
+    waitKey();
+*/
     return 0;
 }
