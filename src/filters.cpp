@@ -241,6 +241,8 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
                      //   values[j] = values[j]*(-1);
 
                      ImageFilterResponses[i*NORIENT+iter].at<float>(r,c) = values[j];
+                     if ( i < NF/(NORIENT*2))
+                         ImageFilterResponses[i*NORIENT+iter].at<float>(r,c) *= -1;
                      iter++;
                 }
             }
