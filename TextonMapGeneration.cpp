@@ -64,6 +64,7 @@ return 0;
         char fname[100];
         sprintf(fname, "example_roads/img%d.jpg", iter);
         Mat input_image_ = imread(fname);
+        cvtColor(input_image_, input_image_, CV_BGR2GRAY);
         resize(input_image_, input_image_, Size(0,0), 0.125,0.125);
         //resize(input_image_, input_image_, Size(0,0), 0.00625,0.00625);
         clock_t start1 = clock();
@@ -78,6 +79,7 @@ return 0;
     //cout << "after Kmeans" << endl;
 
     Mat test_image_ = imread("street_image.jpg");
+    cvtColor(test_image_, test_image_, CV_BGR2GRAY);
     resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
     //resize(test_image_, test_image_, Size(0,0), 0.00625,0.00625);
     textonMap.createFilterResponses(test_image_, 0);
@@ -101,6 +103,20 @@ return 0;
 
     ofstream tm;
     tm.open("tm.txt");
+    tm << "Image1: " << endl;
+    for (int r = 0; r < textonMap1.rows; r++) {
+        for (int c = 0; c < textonMap1.cols; c++) {
+            tm << (int)test_image_.at<uchar>(r,c) << ", " ;
+        }
+        tm << endl;
+    }
+    tm << "Image2: " << endl;
+    for (int r = 0; r < textonMap1.rows; r++) {
+        for (int c = 0; c < textonMap1.cols; c++) {
+            tm << (int)test_image2_.at<uchar>(r,c) << ", " ;
+        }
+        tm << endl;
+    }
 
     tm << "textonMap1: " << endl;
     for (int r = 0; r < textonMap1.rows; r++) {
