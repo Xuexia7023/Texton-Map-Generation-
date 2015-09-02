@@ -169,7 +169,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         //imshow("filterResponses" , ImageFilterResponses[i]);
         //waitKey();
     }
-    /*
+  /*  
     for (int r = 0; r < grey_image_.rows; r++) {
         for (int c = 0; c < grey_image_.cols; c++) {
             for (int i = 0; i < NF; i++) {
@@ -179,8 +179,9 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         }
         FR << endl;
     }
-    */
+    
     FR << "------------------------" << endl;
+    */
     for (int i = 0; i < 3; i++) {
         GaussianBlur(grey_image_, ImageFilterResponses[i+NF], Size(SUP,SUP),
             scales[i], 0, BORDER_DEFAULT); 
@@ -203,6 +204,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
     }
     */
   
+    /*
     for (int r = 0; r < grey_image_.rows; r++) {
         for (int c = 0; c < grey_image_.cols; c++) {
             for (int i = 0; i < NF/NORIENT; i++ ) {
@@ -250,7 +252,8 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         }
         //FR << endl;
     }
-    /*
+    */
+    
     for (int r = 0; r < grey_image_.rows; r++) {
         for (int c = 0; c < grey_image_.cols; c++) {
             int i = 0;
@@ -267,7 +270,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
                 flag1 = 1;
             int index_edge = i; 
             float max_temp_edge = abs(ImageFilterResponses[i].at<float>(r,c));
-            for ( ; i < NBAR+NEDGE; i++) {
+            for (i = NBAR; i < NF; i++) {
                 if (max_temp_edge < abs(ImageFilterResponses[i].at<float>(r,c))) {
                     max_temp_edge = abs(ImageFilterResponses[i].at<float>(r,c));
                     index_edge = i;
@@ -281,32 +284,33 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
             int max = index_bar;
             if (max_temp_bar < max_temp_edge) 
                 max = index_edge;
-            max = max%6;
+            max = max%NORIENT;
 
             for (int i = 0; i < NSCALES*2; i++) {
-                float values[6];
-                for (int j = 0; j < 6; j++) {
-                    values[j] = ImageFilterResponses[6*i+j].at<float>(r,c);
-                    if (flag1 == 1 && i < 3)
+                float values[NORIENT];
+                for (int j = 0; j < NORIENT; j++) {
+                    values[j] = ImageFilterResponses[NORIENT*i+j].at<float>(r,c);
+                    if (flag1 == 1 && i < NSCALES)
                         values[j] = -1*values[j];
                     //if (flag2 == 1 && i >= 3)
                     //    values[j] = -1*values[j];
                 }
                 
                 int iter = 0;
-                for (int k = max; k < 6; k++) {
-                    ImageFilterResponses[6*i + iter].at<float>(r,c) = values[k];
+                for (int k = max; k < NORIENT; k++) {
+                    ImageFilterResponses[NORIENT*i + iter].at<float>(r,c) = values[k];
                     iter++;
                 }
                 for (int k = 0; k < max; k++) {
-                    ImageFilterResponses[6*i + iter].at<float>(r,c) = values[k];
+                    ImageFilterResponses[NORIENT*i + iter].at<float>(r,c) = values[k];
+                    iter++;
                 }
             }
 
         }
     }
-    */
-    /*
+    
+   /* 
     for (int r = 0; r < grey_image_.rows; r++) {
         for (int c = 0; c < grey_image_.cols; c++) {
             for (int i = 0; i < NF; i++) {
@@ -317,8 +321,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         FR << endl;
     }
     FR << "**********************" << endl;
-*/ 
-
+ */
     if (FlagTrainTest == 1) 
         Textons::pushToDictionary(ImageFilterResponses);
     else
@@ -340,8 +343,8 @@ void Textons::pushToDictionary(Mat Responses[]){
 }
 void Textons::pushToImageTextons(Mat Responses[]){
 
-    //ofstream IT;
-    //IT.open("imageTextons.txt", ios::app);
+    ofstream IT;
+    IT.open("imageTextons.txt", ios::app);
     TestImageTextonMap.clear();
     for (int r = 0; r < Responses[0].rows; r++) {
         for (int c = 0; c < Responses[0].cols; c++) {
@@ -349,13 +352,13 @@ void Textons::pushToImageTextons(Mat Responses[]){
 
             for (int i = 0; i < NumFilters; i++) {
                 temp.Filters[i] = Responses[i].at<float>(r,c);
-      //          IT << Responses[i].at<float>(r,c) << ", ";
+                IT << Responses[i].at<float>(r,c) << ", ";
             }
-      //      IT << endl;
+            IT << endl;
             TestImageTextonMap.push_back(temp);
         }
     }
-    //IT << "***************" << endl;
+    IT << "***************" << endl;
 }
 /* --- compute K Means for PixelFeatureVector ----- */ 
 void Textons::computeKmeans(){
