@@ -25,6 +25,11 @@ void magnitude(int rot[][2]) {
     return;
 }
 int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        cout << "error: 2 arguments required" << endl;
+        cout << "Enter number of centers for K means, the number of training images to be used " << endl; 
+        return 0;
+    }
     int k = atoi(argv[1]);
     int numTrainingImages = atoi(argv[2]);
     Textons textonMap(k);
@@ -66,10 +71,11 @@ return 0;
         Mat input_image_ = imread(fname);
         cvtColor(input_image_, input_image_, CV_BGR2GRAY);
         //resize(input_image_, input_image_, Size(0,0), 0.125,0.125);
-        resize(input_image_, input_image_, Size(0,0), 0.5,0.5);
+        //resize(input_image_, input_image_, Size(0,0), 0.5,0.5);
         //resize(input_image_, input_image_, Size(0,0), 0.00625,0.00625);
         clock_t start1 = clock();
         textonMap.createFilterResponses(input_image_, 1);
+        cout << "Creating Filter Responses for train image #" << iter << endl;
         clock_t end1 = clock();
      //   cout << (end1 - start1)/(double)CLOCKS_PER_SEC << endl;
         iter++;
@@ -82,9 +88,11 @@ return 0;
     Mat test_image_ = imread("street_image.jpg");
     cvtColor(test_image_, test_image_, CV_BGR2GRAY);
     //resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
-    resize(test_image_, test_image_, Size(0,0), 0.5, 0.5);
+    //resize(test_image_, test_image_, Size(0,0), 0.5, 0.5);
     //resize(test_image_, test_image_, Size(0,0), 0.00625,0.00625);
+    cout << "Creating Filter Responses for test image" << endl;
     textonMap.createFilterResponses(test_image_, 0);
+    cout << "Generating Texton Map for test image " << endl;
     Mat textonMap1 = textonMap.generateTextonMap(test_image_);
 
     
@@ -92,17 +100,20 @@ return 0;
     Mat test_image2_;
     flip(test_image_, test_image2_, -1);
 //    resize(test_image2_, test_image2_, Size(0,0), 0.00625, 0.00625);
+    cout << "Creating Filter Responses for rotated test image" << endl;
     textonMap.createFilterResponses(test_image2_, 0);
+    cout << "Generating Texton Map for test image " << endl;
     Mat textonMap2 = textonMap.generateTextonMap(test_image2_);
 //    Mat difference  = textonMap1 - textonMap2;
 //    rotate(textonMap2, 180, textonMap2);
+    imshow("Texton Map", textonMap1);
+    waitKey();
+    imshow("Texton Map for rotated image", textonMap2);
+    waitKey();
     flip(textonMap2, textonMap2, -1);
-    imshow("TM2", textonMap2);
-    waitKey();
-    imshow("TM1", textonMap1);
-    waitKey();
-   
 
+   
+/*
     ofstream tm;
     tm.open("tm.txt");
     tm << "Image1: " << endl;
@@ -137,18 +148,19 @@ return 0;
 
 //    tm.close();
 
-
-    tm << "difference Map: " << endl;
+*/
+//    tm << "difference Map: " << endl;
     Mat diff(textonMap1.rows, textonMap1.cols, CV_8UC1);
     for (int r = 0; r < textonMap1.rows; r++) {
         for (int c = 0; c < textonMap1.cols; c++) {
             diff.at<uchar>(r,c) = textonMap1.at<uchar>(r,c) - textonMap2.at<uchar>(r,c);
-            tm << (int)diff.at<uchar>(r,c) << ", ";
+//            tm << (int)diff.at<uchar>(r,c) << ", ";
         }
-        tm << endl;
+//        tm << endl;
     }
-  tm.close();  
-  imshow("diff", diff);
+//  tm.close();  
+
+  imshow("Difference of Texton Maps", diff);
   waitKey();
 
 /*

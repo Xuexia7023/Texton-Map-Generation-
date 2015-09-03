@@ -343,8 +343,8 @@ void Textons::pushToDictionary(Mat Responses[]){
 }
 void Textons::pushToImageTextons(Mat Responses[]){
 
-    ofstream IT;
-    IT.open("imageTextons.txt", ios::app);
+    //ofstream IT;
+    //IT.open("imageTextons.txt", ios::app);
     TestImageTextonMap.clear();
     for (int r = 0; r < Responses[0].rows; r++) {
         for (int c = 0; c < Responses[0].cols; c++) {
@@ -352,13 +352,13 @@ void Textons::pushToImageTextons(Mat Responses[]){
 
             for (int i = 0; i < NumFilters; i++) {
                 temp.Filters[i] = Responses[i].at<float>(r,c);
-                IT << Responses[i].at<float>(r,c) << ", ";
+      //          IT << Responses[i].at<float>(r,c) << ", ";
             }
-            IT << endl;
+      //      IT << endl;
             TestImageTextonMap.push_back(temp);
         }
     }
-    IT << "***************" << endl;
+   // IT << "***************" << endl;
 }
 /* --- compute K Means for PixelFeatureVector ----- */ 
 void Textons::computeKmeans(){
@@ -377,7 +377,7 @@ void Textons::computeKmeans(){
     }
     //fileFilters.close();
     Mat labels;
-    //cout << "before calling kmeans function" << endl;
+    cout << "Computing K means ... " << endl;
     clock_t start = clock();
     kmeans(FilterResponsesKmeans, k, labels, TermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10,1.0), NumFilters, KMEANS_PP_CENTERS, centers);
     clock_t end = clock();
@@ -479,10 +479,10 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
             TextonMapColors.at<Vec3b>(i,j)[2] = colors[k-TextonLabel][2];
         }
     }
-/*    
+    
     imshow("textonMapColor", TextonMapColors);
     waitKey();
-    imshow("textonMap", TextonMapLocal);
+/*    imshow("textonMap", TextonMapLocal);
     waitKey();
 */    
     return TextonMapLocal;
