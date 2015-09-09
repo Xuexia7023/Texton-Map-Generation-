@@ -89,8 +89,8 @@ if (flagKmeans == 1) {
     //cout << "after Kmeans" << endl;
 }
 else {
-    string s("kmeans.txt");
-    textonMap.KmeansCentersReadFromFile(s);
+    //string s("kmeans.txt");
+    textonMap.KmeansCentersReadFromFile();
     
     Mat test_image_ = imread("street_image.jpg");
     cvtColor(test_image_, test_image_, CV_BGR2GRAY);

@@ -51,7 +51,7 @@ class Textons {
         Mat F[NF]; //kernels
 
         void makeRFSFilters();
-        void KmeansCentersReadFromFile(string s);
+        void KmeansCentersReadFromFile();
         void createFilterResponses(InputArray input_image_, int FlagTrainTest);
         //void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
         void pushToDictionary(Mat FilterResponses[]);

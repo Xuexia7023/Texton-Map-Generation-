@@ -400,9 +400,8 @@ void Textons::computeKmeans(){
    kmeansCenters.close();
 }
 
-void Textons::KmeansCentersReadFromFile(string s) {
-    //ifstream kmeansCenters("kmeans.txt", ios::in);
-    ifstream kmeansCenters(s, ios::in);
+void Textons::KmeansCentersReadFromFile() {
+    ifstream kmeansCenters("kmeans.txt", ios::in);
 
     for (int i = 0; i < k; i++) {
         FilterResponses temp;
