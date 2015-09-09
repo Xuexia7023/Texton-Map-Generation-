@@ -94,7 +94,7 @@ else {
     
     Mat test_image_ = imread("street_image.jpg");
     cvtColor(test_image_, test_image_, CV_BGR2GRAY);
-    resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
+    //resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
     //resize(test_image_, test_image_, Size(0,0), 0.5, 0.5);
     //resize(test_image_, test_image_, Size(0,0), 0.00625,0.00625);
     cout << "Creating Filter Responses for test image" << endl;
