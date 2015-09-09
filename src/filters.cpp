@@ -366,6 +366,8 @@ void Textons::computeKmeans(){
     //ofstream fileFilters;
     //fileFilters.open("filterResponses.txt");
 
+    ofstream kmeansCenters;
+    kmeansCenters.open("kmeans.txt");
     FilterResponsesKmeans.create(1,1, CV_32F);
     resize(FilterResponsesKmeans, FilterResponsesKmeans, Size(NumFilters, TrainFilterResponses.size()),0,0);
     for (int i = 0; i < TrainFilterResponses.size(); i++) {
@@ -390,12 +392,28 @@ void Textons::computeKmeans(){
        FilterResponses temp;
        for (int j = 0; j < NumFilters; j++) {
            temp.Filters[j] = centers.at<float>(i,j);
+           kmeansCenters << temp.Filters[j] << " ";
        }
+       kmeansCenters << endl;
        Dictionary.push_back(temp);
    }
-
+   kmeansCenters.close();
 }
 
+void Textons::KmeansCentersReadFromFile(string s) {
+    //ifstream kmeansCenters("kmeans.txt", ios::in);
+    ifstream kmeansCenters(s, ios::in);
+
+    for (int i = 0; i < k; i++) {
+        FilterResponses temp;
+        for (int j = 0; j < NumFilters; j++) {
+            kmeansCenters >> temp.Filters[j]; 
+            //cout << temp.Filters[j] << ", ";
+        }
+        //cout << endl;
+        Dictionary.push_back(temp);
+    }
+}
 double computeDistance(Mat a, Mat b) {
     double dist = 0;
     for (int i = 0; i < Textons::NumFilters; i++) {
@@ -455,7 +473,7 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
                     dist1 = dist2;
                 }
             }
-            TextonMapLocal.at<uchar>(r,c) = (int)(255/(TextonLabel+1));
+            TextonMapLocal.at<uchar>(r,c) = (int)TextonLabel;
 
         }
         //file << endl;
@@ -463,24 +481,42 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     //file << " ***************** " << endl;
     //file.close();
 
-    uchar colors[k][3];
-    for (int i = 0; i < k; i++) {
-        colors[i][0] = (uchar)random();
-        colors[i][1] = (uchar)random();
-        colors[i][2] = (uchar)random();
+    int colors[64][3];
+    int variant[4] = {0, 85, 170, 255};
+    int i = 0;
+    for (int p = 0; p < 4; p++) {
+        for (int q = 0; q < 4; q++) {
+            for (int r = 0; r < 4; r++) {
+                colors[i][0] = variant[p];
+                colors[i][1] = variant[q];
+                colors[i][2] = variant[r];
+
+                int temp1 = colors[i][0];
+                int temp2 = colors[i][1];
+                int temp3 = colors[i][2];
+               // cout << colors[i][0] << " " << colors[i][1] << " " << colors[i][2] << endl;
+                i++;
+
+                //cout << variant[p] << " " << variant[q] << " " << variant[r] << endl;
+            }
+        }
     }
 
     Mat TextonMapColors(TextonMapLocal.rows, TextonMapLocal.cols, CV_8UC3);
     for (int i = 0; i < TextonMapLocal.rows; i++) {
         for (int j = 0; j < TextonMapLocal.cols; j++) {
             uchar TextonLabel = TextonMapLocal.at<uchar>(i,j);
-            TextonMapColors.at<Vec3b>(i,j)[0] = colors[k-TextonLabel][0];
-            TextonMapColors.at<Vec3b>(i,j)[1] = colors[k-TextonLabel][1];
-            TextonMapColors.at<Vec3b>(i,j)[2] = colors[k-TextonLabel][2];
+
+            //cout << colors[k-TextonLabel-1][0] << " " << colors[k-TextonLabel-1][1] << " " << colors[k-TextonLabel-1][2] << endl;
+            TextonMapColors.at<Vec3b>(i,j)[0] = colors[k-TextonLabel-1][0];
+            TextonMapColors.at<Vec3b>(i,j)[1] = colors[k-TextonLabel-1][1];
+            TextonMapColors.at<Vec3b>(i,j)[2] = colors[k-TextonLabel-1][2];
         }
     }
     
     imshow("textonMapColor", TextonMapColors);
+    imwrite("textonMapColored.png", TextonMapColors);
+    imwrite("TextonMap.png", TextonMapLocal);
     waitKey();
 /*    imshow("textonMap", TextonMapLocal);
     waitKey();

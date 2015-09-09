@@ -25,16 +25,17 @@ void magnitude(int rot[][2]) {
     return;
 }
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
+    if (argc != 4) {
         cout << "error: 2 arguments required" << endl;
-        cout << "Enter number of centers for K means, the number of training images to be used " << endl; 
+        cout << "Enter 1 for computing kMeans or 0 for texton Map, Enter number of centers for K means, the number of training images to be used " << endl; 
         return 0;
     }
-    int k = atoi(argv[1]);
-    int numTrainingImages = atoi(argv[2]);
+    int k = atoi(argv[2]);
+    int numTrainingImages = atoi(argv[3]);
     Textons textonMap(k);
     int rot[2][2] = {1, 2, 3, 4};
 
+    int flagKmeans = atoi(argv[1]);
 
 
 /*
@@ -62,8 +63,9 @@ return 0;
 }*/
 
 
+textonMap.makeRFSFilters();
+if (flagKmeans == 1) {
 
-    textonMap.makeRFSFilters();
     int iter = 1;
     while (iter <= numTrainingImages) {
         char fname[100];
@@ -80,21 +82,27 @@ return 0;
      //   cout << (end1 - start1)/(double)CLOCKS_PER_SEC << endl;
         iter++;
     }
+
     
     //cout << "before Kmeans" << endl;
     textonMap.computeKmeans();
     //cout << "after Kmeans" << endl;
-
+}
+else {
+    string s("kmeans.txt");
+    textonMap.KmeansCentersReadFromFile(s);
+    
     Mat test_image_ = imread("street_image.jpg");
     cvtColor(test_image_, test_image_, CV_BGR2GRAY);
-    //resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
+    resize(test_image_, test_image_, Size(0,0), 0.125, 0.125);
     //resize(test_image_, test_image_, Size(0,0), 0.5, 0.5);
     //resize(test_image_, test_image_, Size(0,0), 0.00625,0.00625);
     cout << "Creating Filter Responses for test image" << endl;
     textonMap.createFilterResponses(test_image_, 0);
     cout << "Generating Texton Map for test image " << endl;
     Mat textonMap1 = textonMap.generateTextonMap(test_image_);
-
+}
+/*
     
 //    Mat test_image2_ = imread("street_image.jpg");
     Mat test_image2_;
@@ -111,7 +119,7 @@ return 0;
     imshow("Texton Map for rotated image", textonMap2);
     waitKey();
     flip(textonMap2, textonMap2, -1);
-
+*/
    
 /*
     ofstream tm;
@@ -149,6 +157,7 @@ return 0;
 //    tm.close();
 
 */
+/*
 //    tm << "difference Map: " << endl;
     Mat diff(textonMap1.rows, textonMap1.cols, CV_8UC1);
     for (int r = 0; r < textonMap1.rows; r++) {
@@ -162,7 +171,7 @@ return 0;
 
   imshow("Difference of Texton Maps", diff);
   waitKey();
-
+*/
 /*
     
     Mat exp1 = imread("tm1.jpg");
