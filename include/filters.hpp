@@ -24,18 +24,18 @@ typedef struct feature {
 }pixelFeatures;
 
 typedef struct {
-    float Filters[42];
+    float Filters[39];
 }FilterResponses;
 class Textons {
     public:
         int k;
 
-        static const int SUP = 5;
+        static const int SUP = 11;
         static const int NSCALES = 3; //Number of Scales
        // const int SCALEX[3] = {1, 2, 4}; // Sigma_{x} for the oriented filters
         static const int NORIENT = 6; // Number of orientatioons 
              
-        static const int NROTINV = 2*3;
+        static const int NROTINV = 3;
         static const int NBAR = NSCALES*NORIENT;
         static const int NEDGE = NSCALES*NORIENT;
              
@@ -51,7 +51,7 @@ class Textons {
         Mat F[NF]; //kernels
 
         void makeRFSFilters();
-        void KmeansCentersReadFromFile();
+        void KmeansCentersReadFromFile(string s);
         void createFilterResponses(InputArray input_image_, int FlagTrainTest);
         //void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
         void pushToDictionary(Mat FilterResponses[]);

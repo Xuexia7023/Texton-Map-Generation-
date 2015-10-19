@@ -124,9 +124,11 @@ void Textons::makeRFSFilters() {
     }
 
     int count = 0;
+    float angles[NORIENT] = {PI/6, PI/4, PI/3, 2*PI/3, 3*PI/4, 5*PI/6};
     for (int scale = 0; scale < NSCALES; scale++) {
         for (int orient = 0; orient < NORIENT; orient++) {
-            float angle = PI*orient/NORIENT; 
+            float angle = PI*orient/NORIENT;
+            //float angle = angles[orient];
             float c = cos(angle);
             float s = sin(angle);
 
@@ -148,111 +150,62 @@ void Textons::makeRFSFilters() {
     }
     return;
 }
+cv::Mat fspecialLoG(int WinSize, double sigma){
+
+    cv::Mat xx (WinSize,WinSize,CV_64F);
+    for (int i=0;i<WinSize;i++){
+        for (int j=0;j<WinSize;j++){
+            xx.at<double>(j,i) = (i-(WinSize-1)/2)*(i-(WinSize-1)/2);
+        }
+    }
+    cv::Mat yy;
+    cv::transpose(xx,yy);
+    cv::Mat arg = -(xx+yy)/(2*pow(sigma,2));
+    cv::Mat h (WinSize,WinSize,CV_64F);
+    for (int i=0;i<WinSize;i++){
+        for (int j=0;j<WinSize;j++){
+            h.at<double>(j,i) = pow(exp(1),(arg.at<double>(j,i)));
+        }
+    }
+    double minimalVal, maximalVal;
+    minMaxLoc(h, &minimalVal, &maximalVal);
+    cv::Mat tempMask = (h>DBL_EPSILON*maximalVal)/255;
+    tempMask.convertTo(tempMask,h.type());
+    cv::multiply(tempMask,h,h);
+    
+    if (cv::sum(h)[0]!=0){h=h/cv::sum(h)[0];}
+    
+    cv::Mat h1 = (xx+yy-2*(pow(sigma,2)))/(pow(sigma,4));
+                  cv::multiply(h,h1,h1);
+                  h = h1 - cv::sum(h1)[0]/(WinSize*WinSize);
+                  return h;
+}
  
 void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) {
     Mat grey_image_float_, input_image, grey_image_;
-    float scales[3] = {sqrt(2), sqrt(8), sqrt(32)};
+    float scales[3] = {sqrt(1), sqrt(2), sqrt(3)};
 
-    ofstream FR;
-    FR.open("FR.txt", ios::app);
-    //resize(input_image_, input_image, Size(0,0), 0.25, 0.25);
-    //cvtColor(input_image_, grey_image_, CV_BGR2GRAY);
+
     input_image_.copyTo(grey_image_);
     grey_image_.convertTo(grey_image_float_, CV_64F);
+
 
     Mat ImageFilterResponses[NumFilters];
     for (int i = 0; i < NF; i++) {
         filter2D(grey_image_float_, ImageFilterResponses[i], -1, F[i], Point(-1,-1),
-             0, BORDER_DEFAULT);   
+             0, BORDER_REPLICATE);
 
         ImageFilterResponses[i].convertTo(ImageFilterResponses[i], CV_32F);
-        //imshow("filterResponses" , ImageFilterResponses[i]);
-        //waitKey();
-    }
-  /*  
-    for (int r = 0; r < grey_image_.rows; r++) {
-        for (int c = 0; c < grey_image_.cols; c++) {
-            for (int i = 0; i < NF; i++) {
-                FR << ImageFilterResponses[i].at<float>(r,c) << ", ";
-            }
-            FR << endl;
-        }
-        FR << endl;
     }
     
-    FR << "------------------------" << endl;
-    */
+    int sup = 11;
     for (int i = 0; i < 3; i++) {
-        GaussianBlur(grey_image_, ImageFilterResponses[i+NF], Size(SUP,SUP),
-            scales[i], 0, BORDER_DEFAULT); 
-
-        Laplacian(ImageFilterResponses[i+NF], ImageFilterResponses[i+NF+3], CV_8UC1,
-            SUP, scales[i], 0, BORDER_DEFAULT); 
-        //imshow("filterResponsesLoG", ImageFilterResponses[i+NF+3]);
-        //waitKey();
+        Mat h = fspecialLoG(sup, scales[i]);
+        filter2D(grey_image_float_, ImageFilterResponses[i+NF], -1, h, Point(-1,-1),0, BORDER_DEFAULT);
 
         ImageFilterResponses[i+NF].convertTo(ImageFilterResponses[i+NF], CV_32F);
-        ImageFilterResponses[i+NF+3].convertTo(ImageFilterResponses[i+NF+3], CV_32F);
     }
 
-    /*
-    for (int i = 0; i < NumFilters; i++) {
-        string ty =  type2str( ImageFilterResponses[i].type() );
-        printf("Matrix: %s %dx%d \n", ty.c_str(), ImageFilterResponses[i].cols, ImageFilterResponses[i].rows );
-        cout << i << endl;
-
-    }
-    */
-  
-    /*
-    for (int r = 0; r < grey_image_.rows; r++) {
-        for (int c = 0; c < grey_image_.cols; c++) {
-            for (int i = 0; i < NF/NORIENT; i++ ) {
-                float temp = abs(ImageFilterResponses[i*NORIENT+0].at<float>(r,c));
-                int max_index = 0;
-                float values[NORIENT];
-                values[0] = ImageFilterResponses[i*NORIENT+0].at<float>(r,c);
-                for (int j = 1; j < NORIENT; j++) {
-                    if (temp < abs(ImageFilterResponses[i*NORIENT+j].at<float>(r,c))) {
-                        temp =  abs(ImageFilterResponses[i*NORIENT+j].at<float>(r,c));
-                        max_index = j;
-                    }
-                    values[j] = ImageFilterResponses[i*NORIENT+j].at<float>(r,c);
-                }
-      //          FR << "MAX_INDEX: " << max_index << endl;
-                int iter = 0;
-                if (values[max_index] < 0 && i < NF/(NORIENT*2)) {
-                    for (int j = 0; j < NORIENT; j++) {
-                        values[j] *= -1;
-                    }
-                }
-                for (int j = max_index; j < NORIENT; j++) {
-
-      //              FR << values[j] << endl;
-                    //if (values[max_index] < 0)
-                    //    values[j] *= -1;
-
-                    ImageFilterResponses[i*NORIENT+iter].at<float>(r,c) = values[j];
-                    
-                    iter++;
-                }
-                for (int j = 0; j < max_index; j++) {
-
-       //              FR << values[j] << endl;
-                     //if (values[max_index] < 0)
-                     //   values[j] = values[j]*(-1);
-
-                     ImageFilterResponses[i*NORIENT+iter].at<float>(r,c) = values[j];
-                     if ( i < NF/(NORIENT*2))
-                         ImageFilterResponses[i*NORIENT+iter].at<float>(r,c) *= -1;
-                     iter++;
-                }
-            }
-         //   FR << endl;
-        }
-        //FR << endl;
-    }
-    */
     
     for (int r = 0; r < grey_image_.rows; r++) {
         for (int c = 0; c < grey_image_.cols; c++) {
@@ -268,22 +221,8 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
             int flag1 = 0;
             if (ImageFilterResponses[index_bar].at<float>(r,c) < 0)
                 flag1 = 1;
-            int index_edge = i; 
-            float max_temp_edge = abs(ImageFilterResponses[i].at<float>(r,c));
-            for (i = NBAR; i < NF; i++) {
-                if (max_temp_edge < abs(ImageFilterResponses[i].at<float>(r,c))) {
-                    max_temp_edge = abs(ImageFilterResponses[i].at<float>(r,c));
-                    index_edge = i;
-                }
-            }
-            
-            //int flag2 = 0;
-            //if (ImageFilterResponses[index_edge].at<float>(r,c) < 0)
-            //    flag2 = 1;
-            
+          
             int max = index_bar;
-            if (max_temp_bar < max_temp_edge) 
-                max = index_edge;
             max = max%NORIENT;
 
             for (int i = 0; i < NSCALES*2; i++) {
@@ -292,8 +231,6 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
                     values[j] = ImageFilterResponses[NORIENT*i+j].at<float>(r,c);
                     if (flag1 == 1 && i < NSCALES)
                         values[j] = -1*values[j];
-                    //if (flag2 == 1 && i >= 3)
-                    //    values[j] = -1*values[j];
                 }
                 
                 int iter = 0;
@@ -302,31 +239,23 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
                     iter++;
                 }
                 for (int k = 0; k < max; k++) {
-                    ImageFilterResponses[NORIENT*i + iter].at<float>(r,c) = values[k];
+                    if ((NORIENT*i + iter) < NBAR)
+                        ImageFilterResponses[NORIENT*i + iter].at<float>(r,c) = -1*values[k];
+                    else
+                        ImageFilterResponses[NORIENT*i + iter].at<float>(r,c) = values[k];                    
                     iter++;
                 }
             }
 
         }
     }
-    
-   /* 
-    for (int r = 0; r < grey_image_.rows; r++) {
-        for (int c = 0; c < grey_image_.cols; c++) {
-            for (int i = 0; i < NF; i++) {
-                FR << ImageFilterResponses[i].at<float>(r,c) << ", ";
-            }
-            FR << endl;
-        }
-        FR << endl;
-    }
-    FR << "**********************" << endl;
- */
-    if (FlagTrainTest == 1) 
+
+    if (FlagTrainTest == 1)
         Textons::pushToDictionary(ImageFilterResponses);
     else
         Textons::pushToImageTextons(ImageFilterResponses);
-    return; 
+    return;
+    
 }
 
 void Textons::pushToDictionary(Mat Responses[]){
@@ -343,28 +272,21 @@ void Textons::pushToDictionary(Mat Responses[]){
 }
 void Textons::pushToImageTextons(Mat Responses[]){
 
-    //ofstream IT;
-    //IT.open("imageTextons.txt", ios::app);
     TestImageTextonMap.clear();
     for (int r = 0; r < Responses[0].rows; r++) {
         for (int c = 0; c < Responses[0].cols; c++) {
-            FilterResponses temp;// = new FilterResponses;
+            FilterResponses temp;
 
             for (int i = 0; i < NumFilters; i++) {
                 temp.Filters[i] = Responses[i].at<float>(r,c);
-      //          IT << Responses[i].at<float>(r,c) << ", ";
             }
-      //      IT << endl;
             TestImageTextonMap.push_back(temp);
         }
     }
-   // IT << "***************" << endl;
 }
 /* --- compute K Means for PixelFeatureVector ----- */ 
 void Textons::computeKmeans(){
-    //cout << "inside k means" << endl;
-    //ofstream fileFilters;
-    //fileFilters.open("filterResponses.txt");
+
 
     ofstream kmeansCenters;
     kmeansCenters.open("kmeans.txt");
@@ -373,11 +295,8 @@ void Textons::computeKmeans(){
     for (int i = 0; i < TrainFilterResponses.size(); i++) {
         for (int j = 0; j < NumFilters; j++) {
             FilterResponsesKmeans.at<float>(i,j) = (float)TrainFilterResponses[i].Filters[j];
-      //      fileFilters << FilterResponsesKmeans.at<float>(i,j) << "; ";
         }
-      //  fileFilters << endl;
     }
-    //fileFilters.close();
     Mat labels;
     cout << "Computing K means ... " << endl;
     clock_t start = clock();
@@ -386,8 +305,6 @@ void Textons::computeKmeans(){
     //cout << (end - start)/(double)CLOCKS_PER_SEC << " seconds" << endl;
     //cout << "after calling kmeans function" << endl;
 
-    //imshow("labels", labels);
-    //waitKey();
    for (int i = 0; i < k; i++) {
        FilterResponses temp;
        for (int j = 0; j < NumFilters; j++) {
@@ -400,16 +317,15 @@ void Textons::computeKmeans(){
    kmeansCenters.close();
 }
 
-void Textons::KmeansCentersReadFromFile() {
+void Textons::KmeansCentersReadFromFile(string s) {
     ifstream kmeansCenters("kmeans.txt", ios::in);
+    //ifstream kmeansCenters(s, ios::in);
 
     for (int i = 0; i < k; i++) {
         FilterResponses temp;
         for (int j = 0; j < NumFilters; j++) {
             kmeansCenters >> temp.Filters[j]; 
-            //cout << temp.Filters[j] << ", ";
         }
-        //cout << endl;
         Dictionary.push_back(temp);
     }
 }
@@ -430,56 +346,31 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     Mat TextonMapLocal(input_image_.rows(), input_image_.cols(), CV_8UC1);
     resize(TextonMap, TextonMap, Size(input_image_.cols(), input_image_.rows()), 0, 0);
 
-/*
-    ofstream cf;
-    cf.open("centers.txt");
-   for (int i = 0; i < Dictionary.size(); i++) {
-       for (int j = 0; j < NumFilters; j++) {
-           cf << Dictionary[i].Filters[j] << ", " ;
-       }
-       cf << endl << "----------------------" << endl;
-   }
-   cf.close();
-   */
-    //ofstream file;
-    //file.open("distances.txt");
-
+    //cout << "here" << endl;
     for (int r = 0; r < TextonMapLocal.rows; r++) {
         for (int c = 0; c < TextonMapLocal.cols; c++) {
             double dist1 = (double) numeric_limits<int>::max(); 
             Mat a,b;
             a.create(NumFilters,1, CV_32F);
             b.create(NumFilters,1, CV_32F);
-            //file << "---------------" << endl;
             for (int j = 0; j < NumFilters; j++) {
                 a.at<float>(j,0) = TestImageTextonMap[r*TextonMapLocal.cols + c].Filters[j];
-              //  file << a.at<float>(j,0) << ", ";
             }
-           //file << endl << ".............." << endl; 
             int TextonLabel = 0;
             for (int j = 0; j < Dictionary.size(); j++) {
                 for (int l = 0; l < NumFilters; l++) {
                     b.at<float>(l,0) = Dictionary[j].Filters[l];
-             //       file << Dictionary[j].Filters[l] << ", ";
                 }
-             //   file << endl << " ---------------" << endl;
-                double dist2 = computeDistance(a, b);    
-
-
-            //file << "dist2:  " << dist2 << ",  dist1: " << dist1 << endl;;
+                double dist2 = computeDistance(a, b);
                 if (dist2 < dist1){
                     TextonLabel = j;
                     dist1 = dist2;
                 }
             }
-            TextonMapLocal.at<uchar>(r,c) = (int)TextonLabel;
+            TextonMapLocal.at<uchar>(r,c) = (int)TextonLabel+1;
 
         }
-        //file << endl;
     }
-    //file << " ***************** " << endl;
-    //file.close();
-
     int colors[64][3];
     int variant[4] = {0, 85, 170, 255};
     int i = 0;
@@ -493,10 +384,7 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
                 int temp1 = colors[i][0];
                 int temp2 = colors[i][1];
                 int temp3 = colors[i][2];
-               // cout << colors[i][0] << " " << colors[i][1] << " " << colors[i][2] << endl;
                 i++;
-
-                //cout << variant[p] << " " << variant[q] << " " << variant[r] << endl;
             }
         }
     }
@@ -506,7 +394,6 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
         for (int j = 0; j < TextonMapLocal.cols; j++) {
             uchar TextonLabel = TextonMapLocal.at<uchar>(i,j);
 
-            //cout << colors[k-TextonLabel-1][0] << " " << colors[k-TextonLabel-1][1] << " " << colors[k-TextonLabel-1][2] << endl;
             TextonMapColors.at<Vec3b>(i,j)[0] = colors[k-TextonLabel-1][0];
             TextonMapColors.at<Vec3b>(i,j)[1] = colors[k-TextonLabel-1][1];
             TextonMapColors.at<Vec3b>(i,j)[2] = colors[k-TextonLabel-1][2];
@@ -514,9 +401,10 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     }
     
     imshow("textonMapColor", TextonMapColors);
-    imwrite("textonMapColored.png", TextonMapColors);
-    imwrite("TextonMap.png", TextonMapLocal);
     waitKey();
+    //imwrite("textonMapColored.png", TextonMapColors);
+    //imwrite("TextonMap.png", TextonMapLocal);
+    //waitKey();
 /*    imshow("textonMap", TextonMapLocal);
     waitKey();
 */    
