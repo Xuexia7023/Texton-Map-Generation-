@@ -11,6 +11,7 @@
 #include <string>
 #include <fstream>
 #define PI 3.14
+#define NUM_THREADS 8
 using namespace std;
 using namespace cv;
 
@@ -30,7 +31,7 @@ class Textons {
     public:
         int k;
 
-        static const int SUP = 11;
+        static const int SUP = 51;
         static const int NSCALES = 3; //Number of Scales
        // const int SCALEX[3] = {1, 2, 4}; // Sigma_{x} for the oriented filters
         static const int NORIENT = 6; // Number of orientatioons 

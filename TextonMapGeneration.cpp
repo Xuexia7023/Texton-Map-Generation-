@@ -43,11 +43,11 @@ if (flagKmeans == 1) {
     int iter = 1;
     while (iter <= numTrainingImages) {
         char fname[100];
-        sprintf(fname, "example_roads/img%d.jpg", iter);
+        sprintf(fname, "train_cracks_textons/img%d.jpg", iter);
         Mat input_image_ = imread(fname);
         cvtColor(input_image_, input_image_, CV_BGR2GRAY);
 //        resize(input_image_, input_image_, Size(0,0), 0.125,0.125);
-        resize(input_image_, input_image_, Size(0,0), 0.5,0.5);
+//        resize(input_image_, input_image_, Size(0,0), 0.5,0.5);
 //        resize(input_image_, input_image_, Size(0,0), 0.00625,0.00625);
         clock_t start1 = clock();
         textonMap.createFilterResponses(input_image_, 1);
@@ -73,7 +73,10 @@ else {
         cout << "Creating Filter Responses for test image" << endl;
         textonMap.createFilterResponses(test_image_, 0);
         cout << "Generating Texton Map for test image " << endl;
+    time_t s1 = time(0);
         Mat textonMap1 = textonMap.generateTextonMap(test_image_);
+    time_t s2 = time(0);
+    cout << "Time taken for Texton map generation : " << (s2-s1) << "seconds" << endl;
 
         Mat test_image2_ = imread("street_image2.jpg");
         cvtColor(test_image2_, test_image2_, CV_BGR2GRAY);

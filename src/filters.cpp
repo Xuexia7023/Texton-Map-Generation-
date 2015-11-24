@@ -198,7 +198,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         ImageFilterResponses[i].convertTo(ImageFilterResponses[i], CV_32F);
     }
     
-    int sup = 11;
+    int sup = 51;
     for (int i = 0; i < 3; i++) {
         Mat h = fspecialLoG(sup, scales[i]);
         filter2D(grey_image_float_, ImageFilterResponses[i+NF], -1, h, Point(-1,-1),0, BORDER_DEFAULT);
@@ -337,6 +337,82 @@ double computeDistance(Mat a, Mat b) {
     dist = sqrt(dist);
     return dist;
 }
+typedef struct str_thread_Args {
+    int tid;
+    vector <FilterResponses> *dictionary_thread;
+    vector <FilterResponses> *pointsThread;
+    Mat *textonMapLocal;
+    int rows;
+    int cols;
+    int numFilters;
+}thread_args_t;
+
+void *computeTexton(void *ptr) {
+    
+    //    struct thread_args_t arg;
+    //    arg = *(thread_args_t *) ptr;
+    thread_args_t *args = (thread_args_t *)ptr;
+    int t = args->tid;
+    int r = args->rows;
+    int c = args->cols;
+    int n = args->numFilters;
+    vector <FilterResponses> dict_local;
+    vector <FilterResponses> points;
+    points = *args->pointsThread;
+    dict_local = *args->dictionary_thread;
+    //    vector <FilterResponses> points_local;
+    //    ofstream file;
+    //    file.open("vals.txt");
+    Mat *textonMapThreadLocal = args->textonMapLocal;
+    
+    //    cout  << "from thread: " << t << endl;
+    //    cout << "dict_local.size() " << dict_local.size() << ", pointsSize: " << points.size() << endl;
+    
+    for(int i = t; i < r; i+= NUM_THREADS) {
+        //      cout << "i: " << i << ", t: " << t << endl;
+        for (int c_iter = 0; c_iter < c; c_iter++) {
+            //  cout <<" col: " << c_iter << "row:  " << i << endl;
+            
+            double dist1 = (double) numeric_limits<int>::max();
+            Mat a,b;
+            a.create(n,1, CV_32F);
+            b.create(n,1, CV_32F);
+            //file << "---------------" << endl;
+            for (int j = 0; j < n; j++) {
+                a.at<float>(j,0) = points[i*c + c_iter].Filters[j];
+                //    file << a.at<float>(j,0) << ", ";
+            }
+            
+            int TextonLabel = 0;
+            //cout << "dict_local.size() " << dict_local.size() << endl;
+            for (int j = 0; j < dict_local.size(); j++) {
+                for (int l = 0; l < n; l++) {
+                    b.at<float>(l,0) = dict_local[j].Filters[l];
+                    //           file << dict_local[j].Filters[l] << ", ";
+                }
+                // file << endl << " ---------------" << endl;
+                double dist2 = computeDistance(a, b);
+                
+                
+                //cout << "thread: " << t <<  ",   dist2:  " << dist2 << ",  dist1: " << dist1 << endl;;
+                if (dist2 < dist1){
+                    TextonLabel = j;
+                    dist1 = dist2;
+                }
+                //cout << "j:  " << j << ",  Texton label: " << TextonLabel << endl;
+                
+            }
+            //cout << "Texton label: " << TextonLabel << endl;
+            textonMapThreadLocal->at<uchar>(i,c_iter) = (int)TextonLabel+1;
+            
+        }
+    }
+    
+    //   file.close();
+    return NULL;
+    
+}
+
 /* ----- Generate Texton Map for a given Image ----- */
 Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     int width = input_image_.cols();
@@ -346,30 +422,38 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     Mat TextonMapLocal(input_image_.rows(), input_image_.cols(), CV_8UC1);
     resize(TextonMap, TextonMap, Size(input_image_.cols(), input_image_.rows()), 0, 0);
 
-    //cout << "here" << endl;
-    for (int r = 0; r < TextonMapLocal.rows; r++) {
-        for (int c = 0; c < TextonMapLocal.cols; c++) {
-            double dist1 = (double) numeric_limits<int>::max(); 
-            Mat a,b;
-            a.create(NumFilters,1, CV_32F);
-            b.create(NumFilters,1, CV_32F);
-            for (int j = 0; j < NumFilters; j++) {
-                a.at<float>(j,0) = TestImageTextonMap[r*TextonMapLocal.cols + c].Filters[j];
-            }
-            int TextonLabel = 0;
-            for (int j = 0; j < Dictionary.size(); j++) {
-                for (int l = 0; l < NumFilters; l++) {
-                    b.at<float>(l,0) = Dictionary[j].Filters[l];
-                }
-                double dist2 = computeDistance(a, b);
-                if (dist2 < dist1){
-                    TextonLabel = j;
-                    dist1 = dist2;
-                }
-            }
-            TextonMapLocal.at<uchar>(r,c) = (int)TextonLabel+1;
-
-        }
+    int numThreads = TextonMapLocal.rows*TextonMapLocal.cols;
+    pthread_t threads[NUM_THREADS];
+    thread_args_t thread_args[NUM_THREADS];
+    
+    for (int tIter = 0; tIter < NUM_THREADS; tIter++) {
+        //create a struct with the required data to send to pthread
+        //struct pthread_data *data_ = (struct pthread_data*)malloc(sizeof(struct pthread_data));
+        //thread_args_t thread_args;
+        thread_args[tIter].tid = (int)tIter;
+        //       cout << "tid: " << thread_args[tIter].tid << endl;
+        // kCenters.copyTo(thread_args.dictionary_thread);
+        //        cout << "thread #:   " << tIter << endl;
+        
+        thread_args[tIter].rows = TextonMapLocal.rows;
+        thread_args[tIter].cols = TextonMapLocal.cols;
+        
+        thread_args[tIter].pointsThread = &TestImageTextonMap;
+        
+        thread_args[tIter].numFilters = NumFilters;
+        
+        thread_args[tIter].textonMapLocal = &TextonMapLocal;
+        thread_args[tIter].dictionary_thread = &Dictionary;
+        
+        pthread_create(&threads[tIter], NULL,  computeTexton, (void *) &thread_args[tIter]);
+    }
+    
+    // wait for each thread to complete
+    for (int index = 0; index < NUM_THREADS ; index++) {
+        // block until thread 'index' completes
+        int result_code = pthread_join(threads[index], NULL);
+        // printf("In main: thread %d has completed\n", index);
+        assert(0 == result_code);
     }
     int colors[64][3];
     int variant[4] = {0, 85, 170, 255};
@@ -401,7 +485,7 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     }
     
     imshow("textonMapColor", TextonMapColors);
-    waitKey();
+//    waitKey();
     //imwrite("textonMapColored.png", TextonMapColors);
     //imwrite("TextonMap.png", TextonMapLocal);
     //waitKey();
