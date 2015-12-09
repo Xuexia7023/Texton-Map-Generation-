@@ -2,7 +2,7 @@
 <ol>
 <li>cmake .</li>
 <li>make</li>
-<li>./textonMap <FLAG> <k> <N></li>
+<li>./textonMap FLAG k N</li>
 </ol>
 <br> FLAG: 1 - to compute kmeans centers, 0 - to generate texton map
 <br> k: no of dictionary words,
