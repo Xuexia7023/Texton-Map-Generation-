@@ -7,7 +7,7 @@
 <br> FLAG: 1 - to compute kmeans centers, 0 - to generate texton map
 <br> k: no of dictionary words,
 <br> N: Num of training images to use (here between 1 and 50) <br>
-<em> <u>Note: </u>The folder in which training images are stored must be in "example_roads/im%d.png" format where %d varies from 1 to N, given above</em>
+<em> <u>Note: </u>The folder in which training images are stored must be in "example_roads/im%d.jpg" format where %d varies from 1 to N(or less than N, but not more), given above</em>
 <p> This code tests for an exact zero difference when we compare two images (Image1, Image2), i.e, Image, 'Image1',
  with a 180 degree rotated version of itself, 'Image2'.</p>
 <p> TM2, TM1 are the texton Maps generated for these images(Image1, Image2) where the texton map is flipped as well.</p>
