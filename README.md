@@ -1,7 +1,9 @@
 # Texton-Map-Generation-
-cmake .
-make
-./textonMap <FLAG> <k> <N>
+<ol>
+<li>cmake .</li>
+<li>make</li>
+<li>./textonMap <FLAG> <k> <N></li>
+,/ol>
  FLAG: 1 - to compute kmeans centers, 0 - to generate texton map
  k: no of dictionary words,
  N: Num of training images to use (here between 1 and 50)
