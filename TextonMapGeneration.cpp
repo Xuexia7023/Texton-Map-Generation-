@@ -43,14 +43,17 @@ if (flagKmeans == 1) {
     int iter = 1;
     while (iter <= numTrainingImages) {
         char fname[100];
-        sprintf(fname, "train_cracks_textons/img%d.jpg", iter);
+        sprintf(fname, "example_roads/img%d.jpg", iter);
+        cout << fname << endl;
         Mat input_image_ = imread(fname);
+
         cvtColor(input_image_, input_image_, CV_BGR2GRAY);
 //        resize(input_image_, input_image_, Size(0,0), 0.125,0.125);
 //        resize(input_image_, input_image_, Size(0,0), 0.5,0.5);
 //        resize(input_image_, input_image_, Size(0,0), 0.00625,0.00625);
         clock_t start1 = clock();
         textonMap.createFilterResponses(input_image_, 1);
+
         cout << "Creating Filter Responses for train image #" << iter << endl;
         clock_t end1 = clock();
      //   cout << (end1 - start1)/(double)CLOCKS_PER_SEC << endl;
