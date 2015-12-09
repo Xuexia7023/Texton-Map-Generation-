@@ -16,8 +16,8 @@
 <p> The file FR.txt gives the filter responses for every training and testing image. </p>
 
 <ol> <strong>Points to remember</strong>
-<li> To change the number of training images, the folder name: In TextonMapGeneration.cpp, look for 'iter' to change the number of training images </li>
-<li> To change the folder name: In TextonMapGeneration.cpp, look for 'fname' to change the path name and image name format, but they have to have naming that increments by 1</li>
-<li> To change testing image: In TextonMapGeneration.cpp, look for 'test_image_' and change the file to be read accordingly</li>
-<li> To change filter size: In include/filters.hpp, look for 'SUP' and change the size accordingly (note: if you change the filter size, kmeans has to be recomputed with that filter size for correct results. Also, if you change the number of kcenters for testing, make sure to compute the kcenters before generating the texton map. </li>
+<li> To change the number of training images, the folder name: In <em>TextonMapGeneration.cpp</em>, look for <strong>iter</strong> to change the number of training images </li>
+<li> To change the folder name: In <em>TextonMapGeneration.cpp</em>, look for <strong>fname</strong> to change the path name and image name format, but they have to have naming that increments by 1</li>
+<li> To change testing image: In <em>TextonMapGeneration.cpp</em>, look for <strong>test_image_</strong> and change the file to be read accordingly</li>
+<li> To change filter size: In <em>include/filters.hpp</em>, look for <strong>SUP</strong> and change the size accordingly (note: if you change the filter size, kmeans has to be recomputed with that filter size for correct results. Also, if you change the number of kcenters for testing, make sure to compute the kcenters before generating the texton map. </li>
 </ol>
