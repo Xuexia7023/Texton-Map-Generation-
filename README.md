@@ -13,3 +13,9 @@
 <p> TM2, TM1 are the texton Maps generated for these images(Image1, Image2) where the texton map is flipped as well.</p>
 <p> The file tm.txt stores all the image values, texton Map values and the difference between the two texton maps. </p>
 <p> The file FR.txt gives the filter responses for every training and testing image. </p>
+
+<ol> <strong>Points to remember</strong>
+<li> To change the number of training images, the folder name: In TextonMapGeneration.cpp, look for 'iter' to change the number of training images </li>
+<li> To change the folder name: In TextonMapGeneration.cpp, look for 'fname' to change the path name and image name format, but they have to have naming that increments by 1</li>
+<li> To change testing image: In TextonMapGeneration.cpp, look for 'test_image_' and change the file to be read accordingly</li>
+</ol>
