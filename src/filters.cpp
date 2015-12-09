@@ -67,8 +67,7 @@ void gauss1d(double *g, int size, int scale, float *pts, int order) {
 void normalise(Mat *F, double *gx, double *gy, int sup) {
 
     double sum = 0, absSum = 0;
-    //ofstream f;
-    //f.open("f.txt", ios::app);
+
     Mat Ftemp(sup, sup, CV_64F);
     for (int i = 0; i < sup; i++) {
         for (int j = 0; j < sup; j++) {
@@ -89,12 +88,8 @@ void normalise(Mat *F, double *gx, double *gy, int sup) {
        for (int j = 0; j < sup; j++) {
            Ftemp.at<double>(i,j) /= absSum;
            F->at<float>(i,j) = (float)Ftemp.at<double>(i,j);
-   //        f << F->at<float>(i,j) << ", ";
        }
-   //    f << endl;
    }
-   //f << "----------" << endl;
-   //f.close();
    return;
 }
 void makeFilter(Mat *F, int scale, int phasex, int phasey, float rotPtsx[], float rotPtsy[], int sup) {
@@ -198,7 +193,7 @@ void Textons::createFilterResponses(InputArray input_image_, int FlagTrainTest) 
         ImageFilterResponses[i].convertTo(ImageFilterResponses[i], CV_32F);
     }
     
-    int sup = 51;
+    int sup = SUP;
     for (int i = 0; i < 3; i++) {
         Mat h = fspecialLoG(sup, scales[i]);
         filter2D(grey_image_float_, ImageFilterResponses[i+NF], -1, h, Point(-1,-1),0, BORDER_DEFAULT);
@@ -302,8 +297,7 @@ void Textons::computeKmeans(){
     clock_t start = clock();
     kmeans(FilterResponsesKmeans, k, labels, TermCriteria(CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 10,1.0), NumFilters, KMEANS_PP_CENTERS, centers);
     clock_t end = clock();
-    //cout << (end - start)/(double)CLOCKS_PER_SEC << " seconds" << endl;
-    //cout << "after calling kmeans function" << endl;
+    cout << (end - start)/(double)CLOCKS_PER_SEC << " seconds" << endl;
 
    for (int i = 0; i < k; i++) {
        FilterResponses temp;
@@ -319,7 +313,6 @@ void Textons::computeKmeans(){
 
 void Textons::KmeansCentersReadFromFile(string s) {
     ifstream kmeansCenters("kmeans.txt", ios::in);
-    //ifstream kmeansCenters(s, ios::in);
 
     for (int i = 0; i < k; i++) {
         FilterResponses temp;
@@ -348,9 +341,7 @@ typedef struct str_thread_Args {
 }thread_args_t;
 
 void *computeTexton(void *ptr) {
-    
-    //    struct thread_args_t arg;
-    //    arg = *(thread_args_t *) ptr;
+
     thread_args_t *args = (thread_args_t *)ptr;
     int t = args->tid;
     int r = args->rows;
@@ -360,55 +351,40 @@ void *computeTexton(void *ptr) {
     vector <FilterResponses> points;
     points = *args->pointsThread;
     dict_local = *args->dictionary_thread;
-    //    vector <FilterResponses> points_local;
-    //    ofstream file;
-    //    file.open("vals.txt");
+
     Mat *textonMapThreadLocal = args->textonMapLocal;
     
-    //    cout  << "from thread: " << t << endl;
-    //    cout << "dict_local.size() " << dict_local.size() << ", pointsSize: " << points.size() << endl;
+
     
     for(int i = t; i < r; i+= NUM_THREADS) {
-        //      cout << "i: " << i << ", t: " << t << endl;
         for (int c_iter = 0; c_iter < c; c_iter++) {
-            //  cout <<" col: " << c_iter << "row:  " << i << endl;
             
             double dist1 = (double) numeric_limits<int>::max();
             Mat a,b;
             a.create(n,1, CV_32F);
             b.create(n,1, CV_32F);
-            //file << "---------------" << endl;
             for (int j = 0; j < n; j++) {
                 a.at<float>(j,0) = points[i*c + c_iter].Filters[j];
-                //    file << a.at<float>(j,0) << ", ";
             }
             
             int TextonLabel = 0;
-            //cout << "dict_local.size() " << dict_local.size() << endl;
             for (int j = 0; j < dict_local.size(); j++) {
                 for (int l = 0; l < n; l++) {
                     b.at<float>(l,0) = dict_local[j].Filters[l];
-                    //           file << dict_local[j].Filters[l] << ", ";
                 }
-                // file << endl << " ---------------" << endl;
                 double dist2 = computeDistance(a, b);
                 
-                
-                //cout << "thread: " << t <<  ",   dist2:  " << dist2 << ",  dist1: " << dist1 << endl;;
                 if (dist2 < dist1){
                     TextonLabel = j;
                     dist1 = dist2;
                 }
-                //cout << "j:  " << j << ",  Texton label: " << TextonLabel << endl;
                 
             }
-            //cout << "Texton label: " << TextonLabel << endl;
             textonMapThreadLocal->at<uchar>(i,c_iter) = (int)TextonLabel+1;
             
         }
     }
     
-    //   file.close();
     return NULL;
     
 }
@@ -427,14 +403,9 @@ Mat Textons::generateTextonMap(InputArray input_image_) {//, Mat TextonMap) {
     thread_args_t thread_args[NUM_THREADS];
     
     for (int tIter = 0; tIter < NUM_THREADS; tIter++) {
-        //create a struct with the required data to send to pthread
-        //struct pthread_data *data_ = (struct pthread_data*)malloc(sizeof(struct pthread_data));
-        //thread_args_t thread_args;
+
         thread_args[tIter].tid = (int)tIter;
-        //       cout << "tid: " << thread_args[tIter].tid << endl;
-        // kCenters.copyTo(thread_args.dictionary_thread);
-        //        cout << "thread #:   " << tIter << endl;
-        
+
         thread_args[tIter].rows = TextonMapLocal.rows;
         thread_args[tIter].cols = TextonMapLocal.cols;
         

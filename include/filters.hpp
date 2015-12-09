@@ -33,8 +33,7 @@ class Textons {
 
         static const int SUP = 51;
         static const int NSCALES = 3; //Number of Scales
-       // const int SCALEX[3] = {1, 2, 4}; // Sigma_{x} for the oriented filters
-        static const int NORIENT = 6; // Number of orientatioons 
+        static const int NORIENT = 6; // Number of orientatioons
              
         static const int NROTINV = 3;
         static const int NBAR = NSCALES*NORIENT;
@@ -54,9 +53,7 @@ class Textons {
         void makeRFSFilters();
         void KmeansCentersReadFromFile(string s);
         void createFilterResponses(InputArray input_image_, int FlagTrainTest);
-        //void pushToDictionary(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
         void pushToDictionary(Mat FilterResponses[]);
-        //void pushToImageTextons(Mat DoG_DDoG[], Mat G[], Mat LoG[]);
         void pushToImageTextons(Mat FilterResponses[]);
         void computeKmeans();
         Mat generateTextonMap(InputArray input_image_);
